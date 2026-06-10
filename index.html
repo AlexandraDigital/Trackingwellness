@@ -1241,12 +1241,26 @@ window.onload = ()=>{
 };
 
 // ─── VIDEO ORIENTATION FIX ───
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
 function applyVideoOrientation(vid, track, facing){
-  // iOS and Android WebViews inside Median do not reliably expose
-  // settings.rotation — it returns 0 even when the stream is physically
-  // rotated. The browser/OS handles actual frame rotation internally,
-  // so we only need to mirror the front camera (selfie convention).
-  vid.style.transform = (facing === 'user') ? 'scaleX(-1)' : 'none';
+  if(isIOS()){
+    // iOS Safari delivers the front camera rotated 90° — correct it
+    vid.style.transform = (facing === 'user') ? 'rotate(90deg) scaleX(-1)' : 'rotate(90deg)';
+    // Also need to swap width/height visually
+    vid.style.width = '133%';
+    vid.style.height = '75%';
+    vid.style.marginLeft = '-16.5%';
+    vid.style.marginTop = '12.5%';
+  } else {
+    vid.style.transform = (facing === 'user') ? 'scaleX(-1)' : 'none';
+    vid.style.width = '100%';
+    vid.style.height = '100%';
+    vid.style.marginLeft = '0';
+    vid.style.marginTop = '0';
+  }
 }
 
 function _startCameraStream(){
@@ -1268,18 +1282,9 @@ function _startCameraStream(){
     const vid=document.getElementById('videoEl');
     vid.srcObject=s;
     // Apply orientation once metadata is loaded so videoWidth/videoHeight are known
-    vid.onloadedmetadata = function(){
-      // If video dimensions are swapped (portrait stream in landscape container),
-      // the OS has rotated the stream 90/270° — apply a compensating rotate.
-      // Otherwise just mirror the front camera as normal.
-      const w = vid.videoWidth, h = vid.videoHeight;
-      if(w && h && w < h){
-        // Stream is taller than wide — rotated 90° by the OS; compensate
-        vid.style.transform = (facing==='user') ? 'rotate(90deg) scaleX(-1)' : 'rotate(90deg)';
-      } else {
-        applyVideoOrientation(vid, torchTrack, facing);
-      }
-    };
+   vid.onloadedmetadata = function(){
+  applyVideoOrientation(vid, torchTrack, facing);
+};
     vid.play();
     document.getElementById('cameraPlaceholder').style.display='none';
     document.getElementById('rPPGBadge').classList.add('show');
