@@ -2745,62 +2745,34 @@ window.addEventListener('resize',()=>{
 
   <!-- PWA Service Worker & Install Logic -->
   <script>
-    // Service worker intentionally disabled (standalone deployment)
+  let deferredPrompt = null;
+  const installBanner = document.getElementById('pwa-install-banner');
+  const bannerInstallBtn = document.getElementById('pwa-banner-install-btn');
+  const bannerDismissBtn = document.getElementById('pwa-banner-dismiss-btn');
 
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBanner.classList.add('show');
+  });
 
-    let deferredPrompt = null;
-    const installBtn = document.getElementById('pwa-install-btn');
-    const installBanner = document.getElementById('pwa-install-banner');
-    const bannerInstallBtn = document.getElementById('pwa-banner-install-btn');
-    const bannerDismissBtn = document.getElementById('pwa-banner-dismiss-btn');
+  bannerInstallBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBanner.classList.remove('show');
+  });
 
-    // Listen for the beforeinstallprompt event
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
+  bannerDismissBtn.addEventListener('click', () => {
+    installBanner.classList.remove('show');
+  });
 
-      // Show the install banner
-      installBanner.classList.add('show');
-
-      // Also show floating button
-      installBtn.classList.remove('hidden');
-    });
-
-    // Floating button click
-    installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log('PWA install outcome:', outcome);
-      deferredPrompt = null;
-      installBtn.classList.add('hidden');
-      installBanner.classList.remove('show');
-    });
-
-    // Banner install button
-    bannerInstallBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log('PWA install outcome:', outcome);
-      deferredPrompt = null;
-      installBanner.classList.remove('show');
-      installBtn.classList.add('hidden');
-    });
-
-    // Dismiss banner
-    bannerDismissBtn.addEventListener('click', () => {
-      installBanner.classList.remove('show');
-    });
-
-    // Hide when app is installed
-    window.addEventListener('appinstalled', () => {
-      installBanner.classList.remove('show');
-      installBtn.classList.add('hidden');
-      deferredPrompt = null;
-      console.log('VitalScan PWA installed!');
-    });
-  </script>
+  window.addEventListener('appinstalled', () => {
+    installBanner.classList.remove('show');
+    deferredPrompt = null;
+  });
+</script>
 
   <!-- EMERGENCY MODAL -->
   <div class="emergency-modal-overlay" id="emergencyModalOverlay" onclick="handleEmOverlayClick(event)">
